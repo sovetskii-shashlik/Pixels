@@ -25,7 +25,7 @@ local PIXEL_SIZE = 0.5
 local PIXEL_COLOR = Color3.fromRGB(255, 255, 255)
 local MAX_DISTANCE = 500
 local PIXELS_PER_TICK = 50 -- Много пикселей за тик
-local PIXEL_LIFETIME = 60 -- Время жизни пикселя в секундах (1 минута)
+local PIXEL_LIFETIME = 240 -- Время жизни пикселя в секундах (1 минута)
 local MAX_PIXELS = 500000 -- Лимит на общее количество пикселей
 
 -- Функция создания пикселя
