@@ -6,7 +6,7 @@ tool.Name = "PixelSpray"
 tool.RequiresHandle = false
 tool.Parent = player.Backpack
 
--- Переносим Tool в Backpack при(respавне
+-- Переносим Tool в Backpack при респавне
 player.CharacterAdded:Connect(function()
     tool.Parent = player.Backpack
 end)
@@ -21,11 +21,12 @@ handle.Anchored = false
 handle.Parent = tool
 
 -- Настройки системы
-local PIXEL_SIZE = 0.05
+local PIXEL_SIZE = 0.1
 local PIXEL_COLOR = Color3.fromRGB(255, 255, 255)
 local MAX_DISTANCE = 500
 local PIXELS_PER_TICK = 50 -- Много пикселей за тик
 local PIXEL_LIFETIME = 60 -- Время жизни пикселя в секундах (1 минута)
+local MAX_PIXELS = 500000 -- Лимит на общее количество пикселей
 
 -- Функция создания пикселя
 local function createPixel(position, normal)
@@ -41,16 +42,19 @@ local function createPixel(position, normal)
     -- Устанавливаем CFrame
     pixel.CFrame = CFrame.new(position, position + normal)
     
-    -- Форсируем видимость на большом расстоянии
-    pixel:SetAttribute("RenderPriority", 100)
-    pixel.CastShadow = false
+    -- Форсируем видимость на большом расстоянии через BillboardGui
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0.2, 0, 0.2, 0) -- Размер на экране (в пикселях)
+    billboard.MaxDistance = MAX_DISTANCE -- Максимальная дистанция видимости
+    billboard.AlwaysOnTop = true -- Всегда поверх других объектов
+    billboard.Parent = pixel
     
-    -- Трюк для увеличения видимости мелких объектов
-    local selectionBox = Instance.new("SelectionBox")
-    selectionBox.Adornee = pixel
-    selectionBox.LineThickness = 0.01
-    selectionBox.Transparency = 1
-    selectionBox.Parent = pixel
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = PIXEL_COLOR
+    frame.BackgroundTransparency = 0.3
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
     
     pixel.Parent = workspace
     return pixel
@@ -117,6 +121,15 @@ game:GetService("RunService").Heartbeat:Connect(function()
             table.remove(pixels, i)
         end
     end
+    
+    -- Лимит на количество пикселей
+    while #pixels > MAX_PIXELS do
+        local pixelData = pixels[1]
+        if pixelData and pixelData.Pixel then
+            pixelData.Pixel:Destroy()
+        end
+        table.remove(pixels, 1)
+    end
 end)
 
 -- Переопределяем createPixel для добавления в таблицу с временем
@@ -125,7 +138,7 @@ createPixel = function(position, normal)
     local pixel = oldCreatePixel(position, normal)
     table.insert(pixels, {
         Pixel = pixel,
-        CreatedTime = tick() -- Сохраняем время создания
+        CreatedTime = tick()
     })
     return pixel
 end
