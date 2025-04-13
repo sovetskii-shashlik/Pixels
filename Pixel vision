@@ -1,0 +1,131 @@
+local player = game.Players.LocalPlayer
+
+-- Создаём Tool
+local tool = Instance.new("Tool")
+tool.Name = "PixelSpray"
+tool.RequiresHandle = false
+tool.Parent = player.Backpack
+
+-- Переносим Tool в Backpack при(respавне
+player.CharacterAdded:Connect(function()
+    tool.Parent = player.Backpack
+end)
+
+-- Создаём Handle для Raycast
+local handle = Instance.new("Part")
+handle.Name = "Handle"
+handle.Size = Vector3.new(0.2, 0.2, 0.2)
+handle.Transparency = 1
+handle.CanCollide = false
+handle.Anchored = false
+handle.Parent = tool
+
+-- Настройки системы
+local PIXEL_SIZE = 0.05
+local PIXEL_COLOR = Color3.fromRGB(255, 255, 255)
+local MAX_DISTANCE = 500
+local PIXELS_PER_TICK = 50 -- Много пикселей за тик
+local PIXEL_LIFETIME = 60 -- Время жизни пикселя в секундах (1 минута)
+
+-- Функция создания пикселя
+local function createPixel(position, normal)
+    local pixel = Instance.new("Part")
+    pixel.Name = "WhitePixel"
+    pixel.Size = Vector3.new(PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE)
+    pixel.Color = PIXEL_COLOR
+    pixel.Material = Enum.Material.Neon
+    pixel.Anchored = true
+    pixel.CanCollide = false
+    pixel.Transparency = 0.3
+    
+    -- Устанавливаем CFrame
+    pixel.CFrame = CFrame.new(position, position + normal)
+    
+    -- Форсируем видимость на большом расстоянии
+    pixel:SetAttribute("RenderPriority", 100)
+    pixel.CastShadow = false
+    
+    -- Трюк для увеличения видимости мелких объектов
+    local selectionBox = Instance.new("SelectionBox")
+    selectionBox.Adornee = pixel
+    selectionBox.LineThickness = 0.01
+    selectionBox.Transparency = 1
+    selectionBox.Parent = pixel
+    
+    pixel.Parent = workspace
+    return pixel
+end
+
+-- Основной цикл на Heartbeat
+local active = false
+local heartbeatConnection
+
+tool.Equipped:Connect(function()
+    active = true
+    heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if not active then return end
+        -- Создаём много пикселей за тик
+        for _ = 1, PIXELS_PER_TICK do
+            local dir = Vector3.new(
+                math.random(-100, 100),
+                math.random(-100, 100),
+                math.random(-100, 100)
+            ).Unit
+            
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterDescendantsInstances = {tool, player.Character}
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            
+            local result = workspace:Raycast(handle.Position, dir * MAX_DISTANCE, raycastParams)
+            
+            if result and result.Instance.CanCollide then
+                createPixel(result.Position, result.Normal)
+            end
+        end
+    end)
+end)
+
+tool.Unequipped:Connect(function()
+    active = false
+    if heartbeatConnection then
+        heartbeatConnection:Disconnect()
+        heartbeatConnection = nil
+    end
+end)
+
+-- Автоочистка с учётом времени жизни
+local pixels = {}
+game:GetService("RunService").Heartbeat:Connect(function()
+    local currentTime = tick()
+    for i = #pixels, 1, -1 do
+        local pixelData = pixels[i]
+        if pixelData and pixelData.Pixel and pixelData.Pixel.Parent then
+            local pixel = pixelData.Pixel
+            -- Проверяем, прошло ли 60 секунд
+            if currentTime - pixelData.CreatedTime >= PIXEL_LIFETIME then
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local viewAngle = (pixel.Position - hrp.Position).Unit:Dot(hrp.CFrame.LookVector)
+                    if viewAngle <= 0 then
+                        pixel:Destroy()
+                        table.remove(pixels, i)
+                    end
+                end
+            end
+            -- Если меньше 60 секунд, пиксель не удаляется
+        else
+            table.remove(pixels, i)
+        end
+    end
+end)
+
+-- Переопределяем createPixel для добавления в таблицу с временем
+local oldCreatePixel = createPixel
+createPixel = function(position, normal)
+    local pixel = oldCreatePixel(position, normal)
+    table.insert(pixels, {
+        Pixel = pixel,
+        CreatedTime = tick() -- Сохраняем время создания
+    })
+    return pixel
+end
