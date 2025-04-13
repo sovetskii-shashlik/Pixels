@@ -23,10 +23,10 @@ handle.Parent = tool
 -- Настройки системы
 local PIXEL_SIZE = 0.5
 local PIXEL_COLOR = Color3.fromRGB(255, 255, 255)
-local MAX_DISTANCE = 500
-local PIXELS_PER_TICK = 50 -- Много пикселей за тик
+local MAX_DISTANCE = 1000
+local PIXELS_PER_TICK = 30 -- Много пикселей за тик
 local PIXEL_LIFETIME = 240 -- Время жизни пикселя в секундах (1 минута)
-local MAX_PIXELS = 500000 -- Лимит на общее количество пикселей
+local MAX_PIXELS = 50000 -- Лимит на общее количество пикселей
 
 -- Функция создания пикселя
 local function createPixel(position, normal)
