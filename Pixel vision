@@ -21,7 +21,7 @@ handle.Anchored = false
 handle.Parent = tool
 
 -- Настройки системы
-local PIXEL_SIZE = 0.1
+local PIXEL_SIZE = 0.5
 local PIXEL_COLOR = Color3.fromRGB(255, 255, 255)
 local MAX_DISTANCE = 500
 local PIXELS_PER_TICK = 50 -- Много пикселей за тик
